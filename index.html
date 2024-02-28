@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/3.1.9/signalr.min.js"></script>
+    <script src="script.js" type="module">
+    </script>
+    <script>
+            var baseUrl = 'https://localhost:7161'
+
+        var connection = new signalR.HubConnectionBuilder()
+            .withUrl(baseUrl+"/notificationHub", {
+                withCredentials: true // Send HTTP-only cookies with requests
+            })
+            .build();
+
+        connection.on("ReceiveNotification", function (notification) {
+            var notificationDiv = document.getElementById("notification");
+            notificationDiv.innerHTML += `<p>Title: ${notification.title}</p>`;
+            notificationDiv.innerHTML += `<p>Message: ${notification.message}</p>`;
+            notificationDiv.innerHTML += `<p>Redirect URL: ${notification.redirectUrl}</p>`;
+            notificationDiv.innerHTML += `<hr>`;
+        });
+
+        connection.start()
+            .then(function () {
+                console.log("Connected to SignalR hub");
+            })
+            .catch(function (err) {
+                console.error("Error connecting to SignalR hub:", err);
+            });
+
+        function sendNotification() {
+            var notification = {
+                id: "1",
+                title: "New Notification",
+                message: "This is a test notification",
+                redirectUrl: "https://example.com",
+                isRead: false
+            };
+
+            // Receivers for the notification (replace with actual user IDs)
+            var receivers = ["1", "2"];
+
+            // Invoke the SendNotification method on the SignalR hub
+            connection.invoke("SendNotification", receivers, notification)
+                .then(function () {
+                    console.log("Notification sent successfully");
+                })
+                .catch(function (err) {
+                    console.error("Error sending notification:", err);
+                });
+        }
+
+    </script>
+</head>
+
+<body>
+    <form id="loginForm">
+        <label for="loginCode">Enter Login Code:</label>
+        <input type="text" id="loginCode" name="loginCode">
+        <button type="submit">Login</button>
+    </form>
+    <h2>SignalR Client</h2>
+    <div id="notification"></div>
+    <button onclick="sendNotification()">Send Notification</button>
+</body>
+
+</html>
